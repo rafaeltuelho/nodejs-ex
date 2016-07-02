@@ -1,0 +1,368 @@
+<html>
+  <head>
+    <script type="text/javascript">
+      // Your Client ID can be retrieved from your project in the Google
+      // Developer Console, https://console.developers.google.com
+      var CLIENT_ID = '842307898710-b9r2a9ncrjsujv32fo9fimpo3890988l.apps.googleusercontent.com';
+
+      //GET https://people.googleapis.com/v1/people/me?key={YOUR_API_KEY}
+      var SCOPES = [
+          "https://www.googleapis.com/auth/userinfo.profile",
+          "https://www.googleapis.com/auth/userinfo.email",
+          "https://www.googleapis.com/auth/drive",
+          "https://www.googleapis.com/auth/drive.readonly",
+          "https://www.googleapis.com/auth/spreadsheets",
+          "https://www.googleapis.com/auth/spreadsheets.readonly"
+        ];
+
+      /**
+       * Check if current user has authorized this application.
+       */
+      function checkAuth() {
+        gapi.auth.authorize(
+          {
+            'client_id': CLIENT_ID,
+            'scope': SCOPES.join(' '),
+            'immediate': true
+          }, handleAuthResult);
+      }
+
+      /**
+       * Handle response from authorization server.
+       *
+       * @param {Object} authResult Authorization result.
+       */
+      function handleAuthResult(authResult) {
+
+        //console.log(authResult.access_token);
+        var authorizeDiv = document.getElementById('authorize-div');
+        if (authResult && !authResult.error) {
+          // Hide auth UI, then load client library.
+          authorizeDiv.style.display = 'none';
+
+
+          loadUserProfileInfo();
+          loadSheetsApi();
+        } else {
+          // Show auth UI, allowing the user to initiate authorization by
+          // clicking authorize button.
+          authorizeDiv.style.display = 'inline';
+        }
+      }
+
+      function loadUserProfileInfo(){
+        gapi.client.load('plus', 'v1').then(function() {
+          var request = gapi.client.plus.people.get({
+            'userId': 'me'
+          });
+
+          request.then(function(resp) {
+            var heading = document.createElement('h4');
+            var image = document.createElement('img');
+            image.src = resp.result.image.url;
+            heading.appendChild(image);
+            heading.appendChild(document.createTextNode(resp.result.displayName));
+
+            console.log(resp);
+
+            document.getElementById('content').appendChild(heading);
+          }, function(reason) {
+            console.log('Error: ' + reason.result.error.message);
+          });
+        });
+      }
+
+      /**
+       * Initiate auth flow in response to user clicking authorize button.
+       *
+       * @param {Event} event Button click event.
+       */
+      function handleAuthClick(event) {
+        gapi.auth.authorize(
+          {client_id: CLIENT_ID, scope: SCOPES, immediate: false},
+          handleAuthResult);
+        return false;
+      }
+
+      /**
+       * Load Sheets API client library.
+       */
+      function loadSheetsApi() {
+        var discoveryUrl =
+            'https://sheets.googleapis.com/$discovery/rest?version=v4';
+        //gapi.client.load(discoveryUrl).then(listMajors);
+        gapi.client.load(discoveryUrl).then(listSheets);
+      }
+
+      /**
+       * Print the names and majors of students in a sample spreadsheet:
+       * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+       */
+      function listMajors() {
+        gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+          range: 'Class Data!A2:E',
+        }).then(function(response) {
+          var range = response.result;
+          if (range.values.length > 0) {
+            appendPre('Name, Major:');
+            for (i = 0; i < range.values.length; i++) {
+              var row = range.values[i];
+              // Print columns A and E, which correspond to indices 0 and 4.
+              appendPre(row[0] + ', ' + row[4]);
+            }
+          } else {
+            appendPre('No data found.');
+          }
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      /**
+       * Print the names os SAs:
+       * https://docs.google.com/spreadsheets/d/16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc/edit
+       */
+      function listSheets() {
+        gapi.client.sheets.spreadsheets.get({
+          spreadsheetId: '16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc',
+          fields: 'sheets(properties(sheetId,index,title))'
+        }).then(function(response) {
+          var range = response.result;
+
+          appendPre('\n---\n');
+          for (i = 0; i < range.sheets.length; i++) {
+            var s = range.sheets[i];
+            //console.log(s);
+            // Print columns A and E, which correspond to indices 0 and 4.
+            if (s.properties.index > 0 && s.properties.index < 18)
+              appendPre('SA Name: ' + s.properties.title + '\t SheetID[' + s.properties.sheetId + ']');
+          }
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      /**
+       * Print the timesheet entries:
+       * https://docs.google.com/spreadsheets/d/16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc/edit
+       */
+      function listData() {
+        gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: '16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc',
+          range: 'Rafael Soares!A2:I',
+        }).then(function(response) {
+          var range = response.result;
+          if (range.values.length > 0) {
+            appendPre('\n---\n');
+            appendPre('Semana, Projeto:');
+            for (i = 0; i < range.values.length; i++) {
+              var row = range.values[i];
+              // Print columns A and E, which correspond to indices 0 and 4.
+              appendPre(row[0] + ', ' + row[4]);
+            }
+          } else {
+            appendPre('No data found.');
+          }
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      /**
+       * Ranges:
+       *   Semanas: 'Listas!F1:F53'
+       *   Tipo Atividade: 'Listas!A1:A9'
+       *   Cliente: ''
+       *   Classificacao Conta: 'Listas!J1:J4'
+       *   Projeto/Atividade/Estudo: ''
+       *   Esforço/Horas: número de horas
+       *   Parceiro: ''
+       *   Pré-vendar Parceiro: 'Y,N'
+       *   Cidade: 'Estado-Cidade'
+       */
+       function listRanges(listRange) {
+         gapi.client.sheets.spreadsheets.values.get({
+           spreadsheetId: '16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc',
+           range: listRange,
+         }).then(function(response) {
+           var range = response.result;
+           if (range.values.length > 0) {
+             appendPre('\n---\n');
+             appendPre('Key:');
+             for (i = 0; i < range.values.length; i++) {
+               var row = range.values[i];
+               // Print columns A and E, which correspond to indices 0 and 4.
+               appendPre(row[0]);
+             }
+           } else {
+             appendPre('No data found.');
+           }
+         }, function(response) {
+           appendPre('Error: ' + response.result.error.message);
+         });
+       }
+
+      /**
+       * Add timesheet entries:
+       * https://docs.google.com/spreadsheets/d/16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc/edit
+       * https://developers.google.com/apis-explorer/#search/sheets.spreadsheets.get/m/sheets/v4/sheets.spreadsheets.get?spreadsheetId=16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc&fields=namedRanges%252Csheets%28basicFilter%28range%28endColumnIndex%252CendRowIndex%252CstartColumnIndex%252CstartRowIndex%29%29%252Cproperties%28index%252Ctitle%29%29&_h=8&
+       */
+      function addEntry() {
+        gapi.client.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: '16Xw2WeuBuJrWnddARbif3mnc4QU9KWBtjgzzYotW8dc',
+          requests:
+          [
+            {
+              "appendCells":
+              {
+                "sheetId": 2065586740,
+                "fields": "*",
+                "rows":
+                [
+                  {
+                    "values":
+                    [
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "Q2W03"
+                        },
+                        "dataValidation":
+                        {
+                          "strict": true,
+                          "condition":
+                          {
+                            "type": "ONE_OF_RANGE",
+                            "values":
+                            [
+                              {
+                                "userEnteredValue": "=Listas!F1:F53"
+                              }
+                            ]
+                          }
+                        },
+                        "effectiveValue":
+                        {
+                          "stringValue": "Q2W03"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "Horas usadas em atividades de pre-vendas"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "JS"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "CLIENT"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "API"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "---"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "---"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "---"
+                        }
+                      },
+                      {
+                        "userEnteredValue":
+                        {
+                          "stringValue": "END"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }).then(function(response) {
+          var range = response.result;
+          if (range.values.length > 0) {
+            appendPre('Semana, Projeto:');
+            for (i = 0; i < range.values.length; i++) {
+              var row = range.values[i];
+              // Print columns A and E, which correspond to indices 0 and 4.
+              appendPre(row[0] + ', ' + row[4]);
+            }
+          } else {
+            appendPre('No data found.');
+          }
+        }, function(response) {
+          appendPre('Error: ' + response.result.error.message);
+        });
+      }
+
+      /**
+       * Append a pre element to the body containing the given message
+       * as its text node.
+       *
+       * @param {string} message Text to be placed in pre element.
+       */
+      function appendPre(message) {
+        var pre = document.getElementById('output');
+        var textContent = document.createTextNode(message + '\n');
+        pre.appendChild(textContent);
+      }
+
+
+    </script>
+    <script src="https://apis.google.com/js/client.js?onload=checkAuth"></script>
+    <!--script src="https://apis.google.com/js/api.js"></script -->
+  </head>
+  <body>
+    <div id="authorize-div" style="display: none">
+      <span>Authorize access to Google Sheets API</span>
+      <!--Button for the user to click to initiate auth sequence -->
+      <button id="authorize-button" onclick="handleAuthClick(event)">
+        Authorize
+      </button>
+    </div>
+    <div id="timeshhet-div">
+      <div id="content"></div>
+      <button id="list-sheets-button" onclick="listData()">
+        List Data
+      </button>
+      <button id="update-sheets-button" onclick="addEntry()">
+        Update TimeSheet
+      </button>
+      <button id="weeks-button" onclick="listRanges('Listas!F1:F53')">
+        Weeks
+      </button>
+      <button id="activities-button" onclick="listRanges('Listas!A1:A9')">
+        Activities
+      </button>
+      <button id="accounts-sheets-button" onclick="listRanges('Listas!J1:J4')">
+        Accounts
+      </button>
+    </div>
+    <pre id="output"></pre>
+
+  </body>
+
+</html>

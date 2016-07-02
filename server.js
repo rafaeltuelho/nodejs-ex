@@ -89,6 +89,10 @@ app.get('/pagecount', function (req, res) {
   }
 });
 
+app.get('/timesheet', function (req, res) {
+  res.send('timesheet.html', { pageCountMessage : null}); 
+});
+
 // error handling
 app.use(function(err, req, res, next){
   console.error(err.stack);
