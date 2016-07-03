@@ -7,6 +7,7 @@ var express = require('express'),
 
 app.engine('html', require('ejs').renderFile);
 app.use(morgan('combined'))
+app.use(express.static('static'));
 
 var port = process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080,
     ip   = process.env.IP   || process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0',
@@ -90,7 +91,7 @@ app.get('/pagecount', function (req, res) {
 });
 
 app.get('/timesheet', function (req, res) {
-  res.render('timesheet.html', { pageCountMessage : null}); 
+  res.render('timesheet.html', { pageCountMessage : null});
 });
 
 // error handling
