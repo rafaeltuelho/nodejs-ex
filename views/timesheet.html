@@ -36,9 +36,11 @@
 
         //console.log(authResult.access_token);
         var authorizeDiv = document.getElementById('authorize-div');
+        var timesheetDiv = document.getElementById('timesheet-div');
         if (authResult && !authResult.error) {
           // Hide auth UI, then load client library.
-          authorizeDiv.style.display = 'none';
+	  authorizeDiv.style.display = 'none';
+          timesheetDiv.style.display = 'none';
 
 
           loadUserProfileInfo();
@@ -343,7 +345,7 @@
         Authorize
       </button>
     </div>
-    <div id="timeshhet-div">
+    <div id="timesheet-div" style="display: none">
       <div id="content"></div>
       <button id="list-sheets-button" onclick="listData()">
         List Data
